@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#214c3d"><title>黑松拍照 · 单页体验版</title>
+<style>
+:root{font:18px/1.5 system-ui,"Microsoft YaHei",sans-serif;color:#1b3028;background:#f5f6f1;--pine:#214c3d;--ink:#173e2f}
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button,summary,label{cursor:pointer}button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #ad5917;outline-offset:3px}
+main{max-width:770px;margin:auto;padding:22px 20px 105px}.head{display:flex;align-items:center;justify-content:space-between;color:var(--pine);padding-bottom:14px;border-bottom:1px solid #b8c6ba;font-weight:650}.head small{font-size:.86rem;font-weight:500}
+h1{font-size:clamp(2rem,5vw,2.7rem);line-height:1.2;letter-spacing:.025em;margin:24px 0 8px}p{margin:0 0 12px}.intro{color:#42584e}.group{padding:15px 0;border-bottom:1px solid #cbd5cc}.group h2{font-size:1.28rem;margin:0}.help{font-size:1rem;color:#42584e;margin:2px 0 8px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{touch-action:manipulation}.slot{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;height:86px;background:#fff;border:1.5px dashed #748d7d;border-radius:10px;color:var(--pine);font-weight:650;overflow:hidden}.plus{font-size:1.55rem;font-weight:400}.slot.filled{border:2px solid var(--pine);background:#e2ebe3}.slot img{width:100%;height:100%;object-fit:contain}.chip{position:absolute;right:4px;bottom:4px;padding:2px 7px;background:white;color:#18392a;border-radius:4px;font-size:.85rem}.slot.alert{border:3px solid #9a501b}
+.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #c6d1c7;z-index:1;padding:10px 16px calc(10px + env(safe-area-inset-bottom))}.inner{max-width:730px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}.count{font-weight:700}.primary,.minor{border-radius:8px;padding:11px 18px;min-height:48px;font-weight:650}.primary{background:var(--pine);color:white;border:1px solid var(--pine)}.minor{background:white;color:var(--pine);border:1px solid #789080}
+button:disabled{cursor:default;opacity:.65}#note,#question,#receipt{background:#fff;border-left:4px solid var(--pine);padding:13px 16px;margin:14px 0;border-radius:4px}#note:empty{display:none}#question h2,#receipt h2{font-size:1.2rem;margin:0 0 6px}.actions{display:flex;gap:8px;flex-wrap:wrap}details{margin:18px 0 0;color:#40564a;font-size:.95rem}summary{padding:8px 0}details label{display:block;padding:5px 0}input[type=radio]{width:20px;height:20px;vertical-align:middle}
+dialog{width:min(92vw,590px);border:0;border-radius:14px;padding:20px;color:#172f23}dialog::backdrop{background:#10271ee0}dialog h2{margin:0 0 12px;font-size:1.35rem}dialog img{display:block;max-height:58vh;width:100%;object-fit:contain;background:#ecf1e9;margin:0 0 14px}.meta{font-size:.9rem;color:#52665b;margin:12px 0}.issue{color:#793e15;font-weight:650;margin:7px 0 0}#groups [hidden],[hidden]{display:none!important}
+@media(max-width:480px){main{padding:14px 14px 108px}.slot{height:73px}.head{padding-bottom:8px}h1{margin-top:16px}.group{padding:12px 0}.row{gap:8px}}
+#photoTime{padding:15px 0;border-bottom:1px solid #cbd5cc}
+#photoTime h2{font-size:1.28rem;margin:0 0 8px}
+#dateNotice{margin:9px 0 0}
+#earlierDate{margin-top:10px}
+#oldDate{width:100%;max-width:16em;min-height:48px;padding:8px 12px;border:1px solid #789080;border-radius:8px;background:white;color:inherit}
+#dateHint{margin:5px 0 0}
+#dateError{scroll-margin-block:20px 85px}
+#dateError:empty{display:none}
+.date-choice[aria-pressed="true"]{background:#e2ebe3;border-color:var(--pine)}
+.preview-label{font-weight:700;color:var(--pine);margin:0 0 4px}
+</style></head>
+<body><main>
+<header class="head"><span>Bonsai AI · 黑松</span><small>单页拍照体验版</small></header>
+<h1>给黑松拍照</h1>
+<p class="intro">选同一棵树的 4～6 张照片。点下面的格子拍照或从相册选，同一类可以一次选两张。</p>
+<div id="groups"></div>
+<section id="photoTime" aria-labelledby="photoTimeTitle">
+ <h2 id="photoTimeTitle">照片拍摄时间</h2>
+ <div class="actions">
+  <button class="minor date-choice" id="timeToday" aria-pressed="false">今天拍摄<span hidden aria-hidden="true"> ✓</span></button>
+  <button class="minor date-choice" id="timeEarlier" aria-pressed="false" aria-expanded="false" aria-controls="earlierDate">之前拍摄<span hidden aria-hidden="true"> ✓</span></button>
+ </div>
+ <p class="help" id="dateNotice">结果反映照片拍摄时的树况。想看现在的树况，请选最近拍的照片。</p>
+ <div id="earlierDate" hidden>
+  <input type="text" id="oldDate" aria-label="拍摄日期或年月" aria-describedby="dateHint dateError" placeholder="日期或年月" autocomplete="off">
+  <p class="meta" id="dateHint">填 2026-05-17 或 2026-05</p>
+ </div>
+ <p id="dateError" class="issue" role="status" tabindex="-1"></p>
+</section>
+<div id="note" role="status" tabindex="-1"></div>
+<section id="question" hidden tabindex="-1"><h2>最近黄针有变多吗？</h2><p>选最接近的一项就行。</p><div class="actions" id="answers"></div></section>
+<section id="receipt" hidden tabindex="-1" aria-labelledby="resultTitle"><h2 id="resultTitle"></h2><p class="preview-label">预览示例</p><p id="result"></p><button class="minor" id="edit">返回调整照片</button></section>
+<p class="meta">照片仅在本页预览，关闭后清除。这里不会上传或生成诊断。</p>
+<details id="options"><summary>试试不同情况（演示）</summary><p>可切换模拟情况。页面不会自动判断照片。</p>
+<label><input type="radio" name="mode" value="ready" checked> 照片清楚，资料够用</label>
+<label><input type="radio" name="mode" value="blur"> 一张枝头芽看不清</label>
+<label><input type="radio" name="mode" value="ask"> 照片清楚，还缺一项情况</label></details>
+</main>
+<footer class="bar"><div class="inner"><span class="count" id="count" aria-live="polite">已选 0 张</span><button class="primary" id="submit">提交照片（模拟）</button></div></footer>
+<input type="file" id="picker" accept="image/*" hidden>
+<dialog id="zoom"><h2 id="zoomTitle">查看照片</h2><img id="zoomImg" alt=""><div class="actions"><button class="primary" id="closeZoom">看好了</button><button class="minor" id="replace">换这张</button></div></dialog>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const categories=[
+ ['整棵树','退后一点，从两个方向拍，让整棵树都入镜。'],
+ ['枝条和松针','靠近枝条，拍清松针，方便看枝叶的情况。'],
+ ['枝头的芽','对准枝条最前面的芽，等画面清楚再拍。']
+];
+const photos=Array(6).fill(null);
+let active=0, blurred=null, blurResolved=false, busy=false;
+let dateChoice = null;
+let todayCaptureDate = null;
+let submission = null;
+const total=()=>photos.filter(Boolean).length;
+function say(message){$('note').textContent=message;if(message)$('note').scrollIntoView({block:'nearest'});}
+function clearBranch(){$('question').hidden=true;$('receipt').hidden=true;$('note').textContent='';}
+
+function localDay(date = new Date()) {
+ return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+}
+function dateKey({ year, month, day }) {
+ return year * 10000 + month * 100 + (day ?? 0);
+}
+function formatCaptureDate({ year, month, day }) {
+ return year + '年' + month + '月' + (day === null ? '' : day + '日');
+}
+function paintDateChoice() {
+ for (const [id, option] of [['timeToday', 'today'], ['timeEarlier', 'earlier']]) {
+  const button = $(id);
+  const selected = dateChoice === option;
+  button.setAttribute('aria-pressed', String(selected));
+  button.querySelector('span').hidden = !selected;
+  button.disabled = Boolean(submission);
+ }
+ const earlier = dateChoice === 'earlier';
+ $('timeEarlier').setAttribute('aria-expanded', String(earlier));
+ $('earlierDate').hidden = !earlier;
+ $('oldDate').disabled = Boolean(submission);
+}
+function clearDateError() {
+ $('dateError').textContent = '';
+ $('oldDate').removeAttribute('aria-invalid');
+}
+function dateError(message) {
+ $('dateError').textContent = message;
+ if (dateChoice === 'earlier') $('oldDate').setAttribute('aria-invalid', 'true');
+ $('dateError').focus();
+ return null;
+}
+function captureDateForSubmission() {
+ clearDateError();
+ if (dateChoice === 'today') return todayCaptureDate;
+ if (dateChoice !== 'earlier') return dateError('请先选择照片拍摄时间。');
+ const input = $('oldDate').value.trim();
+ if (!input) return dateError('请填写拍摄日期或年月。');
+ const match = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(input);
+ if (!match) return dateError('请按示例填写日期或年月。');
+ const year = Number(match[1]);
+ const month = Number(match[2]);
+ const day = match[3] === undefined ? null : Number(match[3]);
+ if (year < 1 || month < 1 || month > 12) return dateError('请输入有效的年份和月份。');
+ const lastDay = new Date(0);
+ lastDay.setUTCFullYear(year, month, 0);
+ if (day !== null && (day < 1 || day > lastDay.getUTCDate())) {
+  return dateError('这个月没有这一天，请修改日期。');
+ }
+ const date = { year, month, day, precision: day === null ? 'month' : 'day', source: 'earlier' };
+ if (dateKey(date) > dateKey(localDay())) return dateError('拍摄时间不能晚于今天。');
+ return date;
+}
+$('timeToday').onclick = () => {
+ dateChoice = 'today';
+ todayCaptureDate = { ...localDay(), precision: 'day', source: 'today' };
+ clearDateError();
+ paintDateChoice();
+};
+$('timeEarlier').onclick = () => {
+ dateChoice = 'earlier';
+ clearDateError();
+ paintDateChoice();
+ $('oldDate').focus();
+};
+$('oldDate').oninput = clearDateError;
+
+function choose(index){
+ if(submission||busy)return;
+ active=index;
+ const picker=$('picker');
+ picker.multiple=!photos[index]&&!photos[index^1];
+ picker.value='';picker.click();
+}
+function view(index){
+ active=index;const name=categories[Math.floor(index/2)][0];
+ $('zoomTitle').textContent=name+' · 第 '+(index%2+1)+' 张';
+ $('zoomImg').src=photos[index];$('zoomImg').alt=$('zoomTitle').textContent;
+ $('replace').hidden=Boolean(submission)||busy;$('zoom').showModal();
+}
+function paint(){
+ $('groups').replaceChildren();
+ categories.forEach(([name,hint],group)=>{
+  const section=document.createElement('section');section.className='group';
+  const title=document.createElement('h2');title.textContent=name;
+  const help=document.createElement('p');help.className='help';help.textContent=hint;
+  const row=document.createElement('div');row.className='row';
+  for(let k=0;k<2;k++){
+   const i=2*group+k,b=document.createElement('button');b.className='slot';b.disabled=busy||(!photos[i]&&Boolean(submission));
+   if(photos[i]){
+    b.classList.add('filled');const img=document.createElement('img');img.src=photos[i];img.alt='';
+    const chip=document.createElement('span');chip.className='chip';chip.textContent=i===blurred?'换这张':'放大';b.append(img,chip);
+    if(i===blurred)b.classList.add('alert');
+   }else{b.innerHTML='<span class="plus" aria-hidden="true">＋</span><span>加照片</span>';}
+   b.setAttribute('aria-label',name+' 第'+(k+1)+'张，'+(photos[i]?'查看照片':'添加照片'));
+   b.onclick=()=>photos[i]?view(i):choose(i);row.append(b);
+  }section.append(title,help,row);
+  if(blurred!==null&&group===Math.floor(blurred/2)){
+   const issue=document.createElement('p');issue.className='issue';issue.textContent='模拟提醒：这张芽看不清，点标出的照片就能换。';section.append(issue);
+  }
+  $('groups').append(section);
+ });
+ $('count').textContent='已选 '+total()+' 张';$('submit').disabled=Boolean(submission)||busy;
+ $('submit').textContent=submission?'已模拟提交':'提交照片（模拟）';
+ paintDateChoice();
+}
+$('picker').onchange=async()=>{
+ const files=Array.from($('picker').files);if(!files.length)return;
+ const first=active, targets=[first];if(!photos[first]&&!photos[first^1])targets.push(first^1);
+ let skipped=Math.max(files.length-targets.length,0),added=0;busy=true;paint();
+ for(const file of files.slice(0,targets.length)){
+  const url=URL.createObjectURL(file);const img=new Image();img.src=url;
+  try{await img.decode();}catch{URL.revokeObjectURL(url);skipped++;continue;}
+  const i=targets[added++];if(photos[i])URL.revokeObjectURL(photos[i]);photos[i]=url;
+  if(i===blurred){blurred=null;blurResolved=true;}
+ }
+ busy=false;if(added)clearBranch();paint();if(skipped)say('部分照片未加入。每类最多两张，请选手机能打开的图片。');
+};
+$('closeZoom').onclick=()=>$('zoom').close();
+$('replace').onclick=()=>{const i=active;$('zoom').close();choose(i);};
+function finish(answer){
+ if(submission||busy)return;
+ clearBranch();
+ const captureDate = captureDateForSubmission();
+ if (!captureDate) return;
+ submission = { captureDate: { ...captureDate }, submittedAt: new Date().toISOString() };
+ $('options').open=false;
+ $('resultTitle').textContent = formatCaptureDate(submission.captureDate) + '拍摄时的树况';
+ $('result').textContent='本次共选了 '+total()+' 张照片。'+(answer?'你选择了“'+answer+'”。':'这次无需补充情况。');
+ $('receipt').hidden=false;paint();$('receipt').focus();
+}
+$('submit').onclick=()=>{
+ if(submission||busy)return;clearBranch();clearDateError();
+ const missing=categories.filter((_,g)=>!photos[g*2]&&!photos[g*2+1]).map(c=>c[0]);
+ if(missing.length||total()<4){
+  const requirements=[];if(missing.length)requirements.push('还缺这些部位的照片：'+missing.join('、'));
+  if(total()<4)requirements.push('本版体验至少选 4 张');say(requirements.join('。')+'。');return;
+ }
+ if (!captureDateForSubmission()) return;
+ const mode=document.querySelector('input[name=mode]:checked').value;
+ if(mode==='blur'&&!blurResolved){blurred=photos[4]?4:5;paint();say('模拟提醒：请换一张拍清枝头芽的照片，其余照片已保留。');return;}
+ if(mode==='ask'){$('question').hidden=false;$('question').focus();return;}
+ finish('');
+};
+['变多了','差不多','不清楚'].forEach(a=>{const b=document.createElement('button');b.className='minor';b.textContent=a;b.onclick=()=>finish(a);$('answers').append(b);});
+function resetResult(){submission=null;blurred=null;blurResolved=false;clearBranch();clearDateError();paint();}
+$('edit').onclick=()=>{resetResult();$('groups').scrollIntoView({block:'start'});};
+document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=resetResult);
+paint();
+</script></body></html>
