@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#214c3d">
+<title>黑松拍照 · 拍摄时间与诊断说明</title>
+<style>
+:root{font:18px/1.5 system-ui,"Microsoft YaHei",sans-serif;color:#1b3028;background:#f5f6f1;--pine:#214c3d}
+*{box-sizing:border-box}
+body{margin:0}
+button,input{font:inherit}
+button,summary,label{cursor:pointer}
+button:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #ad5917;outline-offset:3px}
+main{max-width:770px;margin:auto;padding:22px 20px 48px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--pine);padding-bottom:14px;border-bottom:1px solid #b8c6ba;font-weight:650}
+.head small{font-size:.86rem;font-weight:500}
+h1{font-size:clamp(2rem,5vw,2.7rem);line-height:1.2;letter-spacing:.025em;margin:24px 0 8px}
+h2{font-size:1.2rem;margin:0 0 6px}
+p{margin:0 0 12px}
+.intro,.help{color:#42584e}
+.group{padding:15px 0;border-bottom:1px solid #cbd5cc}
+.group h2{font-size:1.28rem;margin:0}
+.help{margin:2px 0 8px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{touch-action:manipulation}
+.slot{position:relative;display:flex;align-items:center;justify-content:center;gap:8px;height:86px;background:#fff;border:1.5px dashed #748d7d;border-radius:10px;color:var(--pine);font-weight:650;overflow:hidden}
+.plus{font-size:1.55rem;font-weight:400}
+.slot.filled{border:2px solid var(--pine);background:#e2ebe3}
+.slot img{width:100%;height:100%;object-fit:contain}
+.chip{position:absolute;right:4px;bottom:4px;padding:2px 7px;background:white;color:#18392a;border-radius:4px;font-size:.85rem}
+.slot.alert{border:3px solid #9a501b}
+.primary,.minor{border-radius:8px;padding:10px 15px;min-height:46px;font-weight:650}
+.primary{background:var(--pine);color:white;border:1px solid var(--pine)}
+.minor{background:white;color:var(--pine);border:1px solid #789080}
+.minor[aria-pressed="true"]{background:#e2ebe3;border-color:var(--pine)}
+.group-camera{margin-top:8px}
+button:disabled{cursor:default;opacity:.65}
+#check,#note,#question,#receipt{background:#fff;border-left:4px solid var(--pine);padding:14px 16px;margin:15px 0;border-radius:4px}
+#note:empty,#dateError:empty,#cameraStatus:empty{display:none}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.check-footer,.date-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.check-footer{border-top:1px solid #cbd5cc;padding-top:12px;margin-top:14px}
+.check-footer p,.date-summary p{margin:0;font-weight:700}
+.date-fields{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.date-fields label{display:block;font-size:.9rem}
+.date-fields input{display:block;width:5em;min-height:44px;margin-top:3px;padding:4px 6px;border:1px solid #789080;border-radius:6px}
+.date-status{color:#793e15;font-weight:650;margin:8px 0 0}
+.preview-label{display:inline-block;background:#e2ebe3;color:#18392a;font-weight:750;padding:2px 9px;border-radius:4px;margin-bottom:9px}
+details{margin:18px 0 0;color:#40564a;font-size:.95rem}
+summary{padding:8px 0}
+details label{display:block;padding:5px 0}
+input[type=radio]{width:20px;height:20px;vertical-align:middle}
+dialog{width:min(92vw,590px);border:0;border-radius:14px;padding:20px;color:#172f23}
+dialog::backdrop{background:#10271ee0}
+dialog h2{margin:0 0 12px;font-size:1.35rem}
+dialog img,dialog video{display:block;max-height:58vh;width:100%;object-fit:contain;background:#ecf1e9;margin:0 0 14px}
+.meta{font-size:.9rem;color:#52665b;margin:12px 0}
+.issue{color:#793e15;font-weight:650;margin:7px 0 0}
+[hidden]{display:none!important}
+@media(max-width:480px){main{padding:14px 14px 38px}.slot{height:73px}.head{padding-bottom:8px}h1{margin-top:16px}.group{padding:12px 0}.row{gap:8px}}
+</style>
+</head>
+<body>
+<main>
+  <header class="head"><span>Bonsai AI · 黑松</span><small>单页拍照体验版</small></header>
+  <h1>给黑松拍照</h1>
+  <p class="intro">请为同一棵黑松准备 6 张照片，每个部位各 2 张。点格子从相册选图，同一类可以一次选两张。</p>
+  <div id="groups"></div>
+
+  <section id="check" aria-labelledby="checkTitle">
+    <h2 id="checkTitle">最后核对</h2>
+    <p>诊断按照片拍摄时的树况给出。想了解现在的树况，请选最近拍的照片。</p>
+    <div id="dateArea" hidden>
+      <div id="dateSummary" class="date-summary" hidden>
+        <p id="captureDate"></p>
+        <button class="minor" id="changeDate">修改拍摄日期</button>
+      </div>
+      <div id="dateChoices" hidden>
+        <p id="datePrompt" tabindex="-1">这组照片是什么时候拍的？</p>
+        <div class="actions">
+          <button class="minor" id="dateToday" aria-pressed="false">今天拍的</button>
+          <button class="minor" id="dateEarlier" aria-pressed="false" aria-expanded="false" aria-controls="earlierForm">之前拍的</button>
+          <button class="minor" id="cancelDate">取消改期</button>
+        </div>
+        <form id="earlierForm" novalidate hidden>
+          <div class="date-fields">
+            <label>年<input id="year" type="text" inputmode="numeric" maxlength="4" placeholder="2026"></label>
+            <label>月<input id="month" type="text" inputmode="numeric" maxlength="2" placeholder="5"></label>
+            <label>日（选填）<input id="day" type="text" inputmode="numeric" maxlength="2"></label>
+          </div>
+          <p class="help">只记得年月时，日期留空。</p>
+          <div class="actions"><button class="primary" type="submit">保存拍摄日期</button></div>
+        </form>
+      </div>
+      <p id="dateError" class="date-status" role="status" tabindex="-1"></p>
+    </div>
+    <div class="check-footer">
+      <p id="count" aria-live="polite">已选 0 / 6 张</p>
+      <button class="primary" id="submit">提交照片（模拟）</button>
+    </div>
+    <div id="note" role="status" tabindex="-1"></div>
+  </section>
+
+  <section id="question" hidden tabindex="-1">
+    <h2>最近黄针有变多吗？</h2>
+    <p>选最接近的一项就行。</p>
+    <div class="actions" id="answers"></div>
+  </section>
+  <section id="receipt" hidden tabindex="-1" aria-labelledby="resultTitle">
+    <h2 id="resultTitle"></h2>
+    <span class="preview-label">预览示例</span>
+    <p>以下是固定示例，未分析你的照片。</p>
+    <p>示例判断：拍摄时，部分老松针发黄。可以留意新芽和新松针之后有没有变化。</p>
+    <p>想了解现在的树况，请拍新的照片，或从相册选择最近拍的照片。</p>
+    <p id="result" class="meta"></p>
+    <button class="minor" id="edit">返回调整照片</button>
+  </section>
+  <p class="meta">照片仅在本页预览，关闭后清除。这里不会上传或生成诊断。</p>
+  <details id="options">
+    <summary>试试不同情况（演示）</summary>
+    <p>可切换模拟情况。页面不会自动判断照片。</p>
+    <label><input type="radio" name="mode" value="ready" checked> 照片清楚，资料够用</label>
+    <label><input type="radio" name="mode" value="blur"> 一张枝头芽看不清</label>
+    <label><input type="radio" name="mode" value="ask"> 照片清楚，还缺一项情况</label>
+  </details>
+</main>
+
+<input type="file" id="picker" accept="image/*" hidden>
+<dialog id="zoom" aria-labelledby="zoomTitle">
+  <h2 id="zoomTitle">查看照片</h2>
+  <img id="zoomImg" alt="">
+  <div class="actions">
+    <button class="primary" id="closeZoom">看好了</button>
+    <button class="minor" id="replace">从相册换这张</button>
+    <button class="minor" id="retake">现场重拍</button>
+  </div>
+</dialog>
+<dialog id="camera" aria-labelledby="cameraTitle">
+  <h2 id="cameraTitle">现场拍摄</h2>
+  <video id="cameraView" autoplay playsinline muted hidden></video>
+  <p id="cameraStatus" role="status"></p>
+  <div class="actions">
+    <button class="primary" id="capture" disabled>拍下这张</button>
+    <button class="minor" id="cameraAlbum" hidden>改从相册选</button>
+    <button class="minor" id="cancelCamera">取消</button>
+  </div>
+</dialog>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const categories = [
+  ['整棵树', '退后一点，从两个方向拍，让整棵树都入镜。'],
+  ['枝条和松针', '靠近枝条，拍清松针，方便看枝叶的情况。'],
+  ['枝头的芽', '对准枝条最前面的芽，等画面清楚再拍。']
+];
+const photos = Array(6).fill(null);
+let active = 0;
+let blurred = null;
+let blurResolved = false;
+let busy = false;
+let asking = false;
+let captureDate = null;
+let editingDate = false;
+let earlierOpen = false;
+let record = null;
+let cameraStream = null;
+let cameraRequest = 0;
+let midnightTimer;
+
+function localDay(date = new Date()) {
+  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
+}
+
+function dayKey({ year, month, day }) {
+  return year * 10000 + month * 100 + (day ?? 0);
+}
+
+function formatDate({ year, month, day }) {
+  return year + '年' + month + '月' + (day === null ? '' : day + '日');
+}
+
+function total() {
+  return photos.filter(Boolean).length;
+}
+
+function say(message) {
+  $('note').textContent = message;
+  if (message) $('note').focus();
+}
+
+function clearBranch() {
+  asking = false;
+  $('question').hidden = true;
+  $('receipt').hidden = true;
+  $('note').textContent = '';
+}
+
+function paintDate() {
+  const current = record?.captureDate ?? captureDate;
+  $('dateArea').hidden = total() !== 6;
+  $('dateSummary').hidden = !current || editingDate;
+  $('dateChoices').hidden = Boolean(record) || Boolean(current && !editingDate);
+  $('changeDate').hidden = Boolean(record);
+  $('changeDate').disabled = busy;
+  $('cancelDate').hidden = !editingDate && !earlierOpen;
+  $('earlierForm').hidden = !earlierOpen;
+  $('dateEarlier').setAttribute('aria-expanded', String(earlierOpen));
+  $('dateEarlier').setAttribute('aria-pressed', String(earlierOpen));
+  $('dateToday').setAttribute('aria-pressed', String(editingDate && !earlierOpen && current?.source === 'user-today'));
+  if (current) {
+    const date = formatDate(current);
+    const label = dayKey(current) === dayKey(localDay()) ? '今天（' + date + '）' : date;
+    $('captureDate').textContent = '拍摄日期：' + label;
+  }
+}
+
+function watchLocalDay() {
+  clearTimeout(midnightTimer);
+  paintDate();
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  midnightTimer = setTimeout(watchLocalDay, midnight - now + 50);
+}
+
+function clearDateEdit() {
+  editingDate = false;
+  earlierOpen = false;
+  $('earlierForm').reset();
+  $('dateError').textContent = '';
+}
+
+function saveDate(date) {
+  captureDate = date;
+  clearDateEdit();
+  paintDate();
+  $('changeDate').focus();
+}
+
+function dateError(message) {
+  $('dateError').textContent = message;
+  $('dateError').focus();
+}
+
+function refreshDateAfterPhotoChange() {
+  clearDateEdit();
+  captureDate = null;
+  const firstDay = photos[0]?.capturedOn;
+  if (firstDay && photos.every(photo => photo?.capturedOn && dayKey(photo.capturedOn) === dayKey(firstDay))) {
+    captureDate = { ...firstDay, source: 'page-camera', precision: 'day' };
+  }
+}
+
+$('changeDate').onclick = () => {
+  clearBranch();
+  editingDate = true;
+  paintDate();
+  $('datePrompt').focus();
+};
+$('dateToday').onclick = () => saveDate({ ...localDay(), source: 'user-today', precision: 'day' });
+$('dateEarlier').onclick = () => {
+  if (!earlierOpen && captureDate) {
+    $('year').value = captureDate.year;
+    $('month').value = captureDate.month;
+    $('day').value = captureDate.day ?? '';
+  }
+  earlierOpen = true;
+  $('dateError').textContent = '';
+  paintDate();
+  $('year').focus();
+};
+$('cancelDate').onclick = () => {
+  clearDateEdit();
+  paintDate();
+  $(captureDate ? 'changeDate' : 'dateEarlier').focus();
+};
+$('earlierForm').onsubmit = event => {
+  event.preventDefault();
+  const yearText = $('year').value.trim();
+  const monthText = $('month').value.trim();
+  const dayText = $('day').value.trim();
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = dayText ? Number(dayText) : null;
+  if (!/^\d{4}$/.test(yearText) || year < 1 || !/^\d{1,2}$/.test(monthText) || month < 1 || month > 12) {
+    dateError('请输入有效的年份和月份。');
+    return;
+  }
+  const monthEnd = new Date(0);
+  monthEnd.setUTCFullYear(year, month, 0);
+  if (day !== null && (!/^\d{1,2}$/.test(dayText) || day < 1 || day > monthEnd.getUTCDate())) {
+    dateError('这个月没有这一天，请修改日期。');
+    return;
+  }
+  const date = { year, month, day, source: 'user-earlier', precision: day === null ? 'month' : 'day' };
+  if (dayKey(date) > dayKey(localDay())) {
+    dateError('拍摄日期不能晚于今天，请修改日期。');
+    return;
+  }
+  saveDate(date);
+};
+
+function choose(index) {
+  if (record || busy) return;
+  active = index;
+  const picker = $('picker');
+  picker.multiple = !photos[index] && !photos[index ^ 1];
+  picker.value = '';
+  picker.click();
+}
+
+function view(index) {
+  active = index;
+  const name = categories[Math.floor(index / 2)][0];
+  $('zoomTitle').textContent = name + ' · 第 ' + (index % 2 + 1) + ' 张';
+  $('zoomImg').src = photos[index].url;
+  $('zoomImg').alt = $('zoomTitle').textContent;
+  $('replace').hidden = $('retake').hidden = Boolean(record) || busy;
+  $('zoom').showModal();
+}
+
+function paint() {
+  $('groups').replaceChildren();
+  categories.forEach(([name, hint], group) => {
+    const section = document.createElement('section');
+    section.className = 'group';
+    const title = document.createElement('h2');
+    title.textContent = name;
+    const help = document.createElement('p');
+    help.className = 'help';
+    help.textContent = hint;
+    const row = document.createElement('div');
+    row.className = 'row';
+    const first = group * 2;
+    for (let index = first; index < first + 2; index++) {
+      const button = document.createElement('button');
+      button.className = 'slot';
+      button.disabled = busy || Boolean(record && !photos[index]);
+      if (photos[index]) {
+        button.classList.add('filled');
+        const img = document.createElement('img');
+        img.src = photos[index].url;
+        img.alt = '';
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = index === blurred ? '换这张' : '放大';
+        button.append(img, chip);
+        if (index === blurred) button.classList.add('alert');
+      } else {
+        button.innerHTML = '<span class="plus" aria-hidden="true">＋</span><span>相册选图</span>';
+      }
+      const action = photos[index] ? '查看照片' : '从相册选图';
+      button.setAttribute('aria-label', name + ' 第' + (index - first + 1) + '张，' + action);
+      button.onclick = () => photos[index] ? view(index) : choose(index);
+      row.append(button);
+    }
+    section.append(title, help, row);
+    const emptySlot = [first, first + 1].find(index => !photos[index]);
+    if (emptySlot !== undefined) {
+      const cameraButton = document.createElement('button');
+      cameraButton.className = 'minor group-camera';
+      cameraButton.textContent = '现场拍摄';
+      cameraButton.setAttribute('aria-label', '现场拍摄：' + name);
+      cameraButton.disabled = busy;
+      cameraButton.onclick = () => openCamera(emptySlot);
+      section.append(cameraButton);
+    }
+    if (blurred !== null && Math.floor(blurred / 2) === group) {
+      const issue = document.createElement('p');
+      issue.className = 'issue';
+      issue.textContent = '模拟提醒：这张芽看不清，点标出的照片就能换。';
+      section.append(issue);
+    }
+    $('groups').append(section);
+  });
+  $('count').textContent = '已选 ' + total() + ' / 6 张';
+  $('submit').disabled = Boolean(record) || busy;
+  $('submit').textContent = record ? '已模拟提交' : '提交照片（模拟）';
+  paintDate();
+}
+
+function setPhoto(index, photo) {
+  if (photos[index]?.url.startsWith('blob:')) URL.revokeObjectURL(photos[index].url);
+  photos[index] = photo;
+  if (index === blurred) {
+    blurred = null;
+    blurResolved = true;
+  }
+}
+
+function photosChanged() {
+  clearBranch();
+  refreshDateAfterPhotoChange();
+  paint();
+}
+
+$('picker').onchange = async () => {
+  const files = Array.from($('picker').files);
+  if (!files.length || busy || record) return;
+  const targets = [active];
+  if (!photos[active] && !photos[active ^ 1]) targets.push(active ^ 1);
+  let skipped = Math.max(files.length - targets.length, 0);
+  let added = 0;
+  busy = true;
+  paint();
+  for (const file of files.slice(0, targets.length)) {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+    } catch {
+      URL.revokeObjectURL(url);
+      skipped++;
+      continue;
+    }
+    setPhoto(targets[added++], { url, capturedOn: null });
+  }
+  busy = false;
+  if (added) photosChanged();
+  else paint();
+  if (skipped) say('部分照片未加入。每类最多两张，请选手机能打开的图片。');
+};
+$('closeZoom').onclick = () => $('zoom').close();
+$('replace').onclick = () => { $('zoom').close(); choose(active); };
+$('retake').onclick = () => { $('zoom').close(); openCamera(active); };
+
+function stopCamera() {
+  cameraRequest++;
+  cameraStream?.getTracks().forEach(track => track.stop());
+  cameraStream = null;
+  $('cameraView').srcObject = null;
+}
+
+async function openCamera(index) {
+  if (record || busy || $('camera').open) return;
+  active = index;
+  const name = categories[Math.floor(index / 2)][0];
+  const request = ++cameraRequest;
+  $('cameraTitle').textContent = '现场拍摄：' + name;
+  $('cameraStatus').textContent = '正在打开相机…';
+  $('cameraView').hidden = true;
+  $('capture').disabled = true;
+  $('cameraAlbum').hidden = true;
+  $('camera').showModal();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' } } });
+    if (request !== cameraRequest || !$('camera').open) {
+      stream.getTracks().forEach(track => track.stop());
+      return;
+    }
+    cameraStream = stream;
+    $('cameraView').srcObject = stream;
+    $('cameraView').hidden = false;
+    await $('cameraView').play();
+    if (request !== cameraRequest || !$('camera').open) return;
+    $('cameraStatus').textContent = '';
+    $('capture').disabled = false;
+  } catch {
+    if (request !== cameraRequest || !$('camera').open) return;
+    stopCamera();
+    $('cameraView').hidden = true;
+    $('cameraStatus').textContent = '无法打开页面内相机。可从相册选图，最后再确认整组拍摄日期。';
+    $('cameraAlbum').hidden = false;
+  }
+}
+
+function closeCamera() {
+  $('camera').close();
+  stopCamera();
+}
+
+$('camera').addEventListener('cancel', stopCamera);
+$('cancelCamera').onclick = closeCamera;
+$('cameraAlbum').onclick = () => { closeCamera(); choose(active); };
+$('capture').onclick = () => {
+  const video = $('cameraView');
+  if (!cameraStream?.getVideoTracks().some(track => track.readyState === 'live') || video.readyState < 2) return;
+  const capturedOn = localDay();
+  const scale = Math.min(1, 1600 / Math.max(video.videoWidth, video.videoHeight));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(video.videoWidth * scale);
+  canvas.height = Math.round(video.videoHeight * scale);
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  setPhoto(active, { url: canvas.toDataURL('image/jpeg', 0.9), capturedOn });
+  closeCamera();
+  photosChanged();
+};
+window.addEventListener('pagehide', () => {
+  if ($('camera').open) closeCamera();
+});
+
+function finish(answer) {
+  if (record || busy || editingDate || earlierOpen || !captureDate || total() !== 6) return;
+  record = { captureDate: { ...captureDate }, submittedAt: new Date().toISOString() };
+  clearBranch();
+  $('options').open = false;
+  $('resultTitle').textContent = formatDate(record.captureDate) + '拍摄时的树况';
+  $('result').textContent = '本次共选了 6 张照片。' + (answer ? '你选择了“' + answer + '”。' : '');
+  $('receipt').hidden = false;
+  paint();
+  $('receipt').focus();
+}
+
+$('submit').onclick = () => {
+  if (record || busy) return;
+  clearBranch();
+  if (total() !== 6) {
+    say('请先补齐 6 张照片，每个部位各 2 张。');
+    return;
+  }
+  if (!captureDate || editingDate || earlierOpen) {
+    dateError('请先确认整组照片的拍摄日期。');
+    return;
+  }
+  const mode = document.querySelector('input[name=mode]:checked').value;
+  if (mode === 'blur' && !blurResolved) {
+    blurred = 4;
+    paint();
+    say('模拟提醒：请换一张拍清枝头芽的照片，其余照片已保留。');
+    return;
+  }
+  if (mode === 'ask') {
+    asking = true;
+    $('question').hidden = false;
+    $('question').focus();
+    return;
+  }
+  finish('');
+};
+for (const answer of ['变多了', '差不多', '不清楚']) {
+  const button = document.createElement('button');
+  button.className = 'minor';
+  button.textContent = answer;
+  button.onclick = () => { if (asking) finish(answer); };
+  $('answers').append(button);
+}
+function resetResult() {
+  record = null;
+  blurred = null;
+  blurResolved = false;
+  clearBranch();
+  paint();
+}
+$('edit').onclick = () => {
+  resetResult();
+  $('groups').scrollIntoView({ block: 'start' });
+  $('groups').querySelector('button')?.focus({ preventScroll: true });
+};
+document.querySelectorAll('[name=mode]').forEach(radio => radio.onchange = resetResult);
+window.addEventListener('focus', watchLocalDay);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) watchLocalDay(); });
+paint();
+watchLocalDay();
+</script>
+</body>
+</html>
